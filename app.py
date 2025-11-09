@@ -19,6 +19,9 @@ PUBLIC_URL = os.getenv('PUBLIC_URL', '')
 
 DROPBOX_ACCESS_TOKEN = os.getenv('DROPBOX_ACCESS_TOKEN', '')
 DROPBOX_FOLDER = os.getenv('DROPBOX_FOLDER', '/Public/Videos')
+DROPBOX_APP_KEY = os.getenv('DROPBOX_APP_KEY', '')
+DROPBOX_APP_SECRET = os.getenv('DROPBOX_APP_SECRET', '')
+DROPBOX_REFRESH_TOKEN = os.getenv('DROPBOX_REFRESH_TOKEN', '')
 
 APP_USERNAME = os.getenv('APP_USERNAME', 'admin')
 APP_PASSWORD = os.getenv('APP_PASSWORD', 'changeme')
@@ -33,13 +36,31 @@ SCOPES = [
 TOKEN_CACHE_FILE = "token_cache.json"
 
 # Initialize Dropbox client
+# Initialize Dropbox client
 def get_dropbox_client():
-    """Get authenticated Dropbox client"""
+    """Get authenticated Dropbox client with automatic token refresh"""
+    global DROPBOX_ACCESS_TOKEN
+    
+    # If we have a refresh token, use OAuth with auto-refresh
+    if DROPBOX_REFRESH_TOKEN and DROPBOX_APP_KEY and DROPBOX_APP_SECRET:
+        try:
+            dbx = dropbox.Dropbox(
+                oauth2_refresh_token=DROPBOX_REFRESH_TOKEN,
+                app_key=DROPBOX_APP_KEY,
+                app_secret=DROPBOX_APP_SECRET
+            )
+            # Test the connection
+            dbx.users_get_current_account()
+            return dbx
+        except Exception as e:
+            print(f"Error with refresh token: {e}")
+            # Fall through to try access token
+    
+    # Fall back to access token if available
     if not DROPBOX_ACCESS_TOKEN:
         return None
     return dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
 
-# Extract site details from URL
 def parse_site_url(url):
     """Extract tenant and site path from SharePoint URL"""
     if not url:
