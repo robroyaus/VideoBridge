@@ -6,7 +6,6 @@ This token will allow the app to automatically refresh expired access tokens.
 
 import os
 import sys
-import webbrowser
 from dropbox import DropboxOAuth2FlowNoRedirect
 
 def update_env_file(key, value):
@@ -68,19 +67,11 @@ def main():
     print("\n" + "=" * 60)
     print("STEP 1: Authorize the App")
     print("=" * 60)
-    print(f"\nOpening browser to:\n{authorize_url}\n")
-    
-    # Open browser
-    try:
-        webbrowser.open(authorize_url)
-        print("✓ Browser opened")
-    except:
-        print("⚠  Could not open browser automatically")
-    
-    print("\nPlease:")
-    print("1. Log in to Dropbox if prompted")
-    print("2. Click 'Allow' to authorize the app")
-    print("3. Copy the authorization code\n")
+    print("\n1. Open this URL in your browser (on your computer):")
+    print("\n" + authorize_url)
+    print("\n2. Log in to Dropbox if prompted")
+    print("3. Click 'Allow' to authorize the app")
+    print("4. Copy the authorization code shown on the page\n")
     
     # Get authorization code from user
     auth_code = input("Enter the authorization code: ").strip()
