@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, Response
+from flask_cors import CORS
 from functools import wraps
 import os
 from datetime import datetime, timedelta
@@ -11,6 +12,7 @@ from dropbox.exceptions import ApiError
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
+CORS(app)
 
 # Configuration
 SHAREPOINT_SITE_URL = os.getenv('SHAREPOINT_SITE_URL', '')
@@ -463,7 +465,7 @@ def dropbox_copy():
         if not dbx:
             return jsonify({'error': 'Dropbox not configured'}), 500
         
-        dropbox_path = f"{DROPBOX_FOLDER}/{filename}"
+        dropbox_path = f"/{filename}" if not DROPBOX_FOLDER else f"{DROPBOX_FOLDER}/{filename}"
         
         # Upload file in chunks
         file_size = int(file_response.headers.get('Content-Length', 0))
@@ -540,20 +542,9 @@ def dropbox_link():
         if not dbx:
             return jsonify({'error': 'Dropbox not configured'}), 500
         
-        # Create shared link
-        try:
-            shared_link = dbx.sharing_create_shared_link(file_path)
-            link_url = shared_link.url
-        except ApiError as e:
-            if e.error.is_shared_link_already_exists():
-                # Link already exists, get it
-                links = dbx.sharing_list_shared_links(path=file_path)
-                if links.links:
-                    link_url = links.links[0].url
-                else:
-                    return jsonify({'error': 'Failed to get existing link'}), 500
-            else:
-                raise
+        # Get temporary link (expires in 4 hours)
+        temp_link = dbx.files_get_temporary_link(file_path)
+        link_url = temp_link.link
         
         # Convert to direct download link
         # Change www.dropbox.com to dl.dropboxusercontent.com and remove ?dl=0

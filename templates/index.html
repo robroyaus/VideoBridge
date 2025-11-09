@@ -331,10 +331,40 @@
                 if (data.error) {
                     showMessage(`Error: ${data.error}`, 'error');
                 } else {
-                    // Copy to clipboard
-                    navigator.clipboard.writeText(data.link).then(() => {
+                    // Try multiple methods to copy to clipboard
+                    let copied = false;
+                    
+                    // Method 1: Modern clipboard API
+                    if (navigator.clipboard && window.isSecureContext) {
+                        try {
+                            await navigator.clipboard.writeText(data.link);
+                            copied = true;
+                        } catch (err) {}
+                    }
+                    
+                    // Method 2: execCommand fallback
+                    if (!copied) {
+                        const textArea = document.createElement('textarea');
+                        textArea.value = data.link;
+                        textArea.style.position = 'fixed';
+                        textArea.style.left = '-999999px';
+                        textArea.style.top = '0';
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        try {
+                            copied = document.execCommand('copy');
+                        } catch (err) {}
+                        document.body.removeChild(textArea);
+                    }
+                    
+                    // Show result or prompt
+                    if (copied) {
                         showMessage(`✅ Link copied to clipboard!`, 'success');
-                    });
+                    } else {
+                        // Last resort: show in prompt
+                        prompt("Copy this link (Ctrl+C):", data.link);
+                    }
                 }
                 
             } catch (error) {
